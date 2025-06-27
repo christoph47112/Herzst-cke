@@ -29,7 +29,7 @@ def generate_barcode_image(code):
     except Exception:
         return None
 
-# PDF-Export mit Barcodes (kompakt, 3 Spalten optimiert, bessere Barcodequalität)
+# PDF-Export mit Barcodes (kompakt, 3 Spalten optimiert, keine überlappenden Barcodes)
 def generate_pdf(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -39,13 +39,14 @@ def generate_pdf(df):
     pdf.ln(5)
 
     tempfiles = []
-    col_width = 62  # drei Spalten auf A4 (180mm nutzbar)
-    row_height = 40
+    col_width = 62
+    row_height = 50
     margin = 10
     spacing = 3
     x_positions = [margin + i * col_width for i in range(3)]
     col = 0
     y = pdf.get_y()
+    max_y = 270  # damit nichts überlappt am Seitenende
 
     for index, row in df.iterrows():
         bezeichnung = str(row["Bezeichnung"])
@@ -60,6 +61,12 @@ def generate_pdf(df):
                 x = x_positions[col]
                 if col == 0:
                     y = pdf.get_y()
+
+                # Seite umbrechen, wenn Y-Höhe überschritten
+                if y + row_height > max_y:
+                    pdf.add_page()
+                    y = pdf.get_y()
+
                 pdf.set_xy(x, y)
                 pdf.set_font("Arial", style="B", size=7)
                 pdf.multi_cell(col_width - spacing, 4, bezeichnung, border=0)
