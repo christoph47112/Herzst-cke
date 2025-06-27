@@ -53,10 +53,12 @@ if uploaded_file:
         # Barcode-Spalte erzeugen (HTML fähig)
         negativ_df["Barcode"] = negativ_df["Artikel"].apply(generate_barcode_base64)
 
+        # Spaltenreihenfolge ändern: Bezeichnung, Artikel, Barcode
+        negativ_df = negativ_df[["Bezeichnung", "Artikel", "Barcode"]]
+
         st.success(f"{len(negativ_df)} Artikel fehlen im Sortiment.")
         st.markdown("**Negativliste mit Barcodes:**", unsafe_allow_html=True)
-        for _, row in negativ_df.iterrows():
-            st.markdown(f"**{row['Artikel']} – {row['Bezeichnung']}**<br>{row['Barcode']}", unsafe_allow_html=True)
+        st.write(negativ_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
         # Download-Button für Negativliste (ohne HTML)
         @st.cache_data
