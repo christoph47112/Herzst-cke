@@ -23,7 +23,7 @@ def generate_barcode_image(code):
     rv = io.BytesIO()
     try:
         barcode_obj = CODE128(code, writer=ImageWriter())
-        barcode_obj.write(rv, options={"module_height": 10.0, "font_size": 8, "quiet_zone": 2.0})
+        barcode_obj.write(rv, options={"module_height": 8.0, "font_size": 6, "quiet_zone": 2.0})
         rv.seek(0)
         return Image.open(rv).convert("RGB")
     except Exception:
@@ -40,7 +40,7 @@ def generate_pdf(df):
 
     tempfiles = []
     col_width = 62
-    row_height = 50
+    row_height = 45
     margin = 10
     spacing = 3
     x_positions = [margin + i * col_width for i in range(3)]
@@ -72,7 +72,7 @@ def generate_pdf(df):
                 pdf.multi_cell(col_width - spacing, 4, bezeichnung, border=0)
                 pdf.set_xy(x, pdf.get_y())
                 pdf.set_font("Arial", size=6)
-                pdf.cell(col_width - spacing, 4, f"GTIN: {artikel}", ln=2)
+                pdf.cell(col_width - spacing, 4, f"Artikelnummer: {artikel}", ln=2)
                 pdf.image(tmpfile.name, x=x + 5, y=pdf.get_y(), w=col_width - 10)
 
                 col = (col + 1) % 3
