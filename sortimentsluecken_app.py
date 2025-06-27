@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 import io
+import barcode
+from barcode.writer import ImageWriter
+from PIL import Image
+import base64
 
 # Fest hinterlegte Mutterliste laden (aus dem Projektverzeichnis)
 @st.cache_data
@@ -8,6 +12,17 @@ def load_mutterliste():
     df = pd.read_excel("Herzstuecke-Mutter-Liste.xlsx")
     df["Artikel"] = df["Artikel"].astype(str).str.strip()
     return df
+
+# Funktion zur Erzeugung eines Barcodes als Base64-String
+def generate_barcode_base64(code):
+    CODE128 = barcode.get_barcode_class('code128')
+    rv = io.BytesIO()
+    try:
+        CODE128(code, writer=ImageWriter()).write(rv)
+        encoded = base64.b64encode(rv.getvalue()).decode("utf-8")
+        return f"<img src='data:image/png;base64,{encoded}' width='150'>"
+    except Exception:
+        return "Fehler"
 
 st.title("🛒 Herzstücke Sortiments-Check")
 st.markdown("""
@@ -28,20 +43,27 @@ if uploaded_file:
     else:
         # Vergleich vorbereiten
         positiv_df["Artikel"] = positiv_df["Artikel"].astype(str).str.strip()
+        mutter_df["Artikel"] = mutter_df["Artikel"].astype(str).str.strip()
         mutter_artikel = set(mutter_df["Artikel"])
         positiv_artikel = set(positiv_df["Artikel"])
 
         fehlende_artikel = sorted(mutter_artikel - positiv_artikel)
-        negativ_df = mutter_df[mutter_df["Artikel"].isin(fehlende_artikel)]
+        negativ_df = mutter_df[mutter_df["Artikel"].isin(fehlende_artikel)].copy()
+
+        # Barcode-Spalte erzeugen (HTML fähig)
+        negativ_df["Barcode"] = negativ_df["Artikel"].apply(generate_barcode_base64)
 
         st.success(f"{len(negativ_df)} Artikel fehlen im Sortiment.")
-        st.dataframe(negativ_df)
+        st.markdown("**Negativliste mit Barcodes:**", unsafe_allow_html=True)
+        for _, row in negativ_df.iterrows():
+            st.markdown(f"**{row['Artikel']} – {row['Bezeichnung']}**<br>{row['Barcode']}", unsafe_allow_html=True)
 
-        # Download-Button für Negativliste
+        # Download-Button für Negativliste (ohne HTML)
         @st.cache_data
         def convert_df(df):
+            df_clean = df.drop(columns=["Barcode"])
             output = io.BytesIO()
-            df.to_excel(output, index=False, engine="openpyxl")
+            df_clean.to_excel(output, index=False, engine="openpyxl")
             output.seek(0)
             return output
 
