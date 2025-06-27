@@ -10,7 +10,7 @@ import base64
 @st.cache_data
 def load_mutterliste():
     df = pd.read_excel("Herzstuecke-Mutter-Liste.xlsx")
-    df["Artikel"] = df["Artikel"].astype(str).str.strip()
+    df["Artikel"] = df["Artikel"].astype(str).str.strip().str.replace(".0", "", regex=False)
     return df
 
 # Funktion zur Erzeugung eines Barcodes als Base64-String
@@ -42,8 +42,8 @@ if uploaded_file:
         st.error("Die hochgeladene Positivliste enthält keine Spalte 'Artikel'.")
     else:
         # Vergleich vorbereiten
-        positiv_df["Artikel"] = positiv_df["Artikel"].astype(str).str.strip()
-        mutter_df["Artikel"] = mutter_df["Artikel"].astype(str).str.strip()
+        positiv_df["Artikel"] = positiv_df["Artikel"].astype(str).str.strip().str.replace(".0", "", regex=False)
+        mutter_df["Artikel"] = mutter_df["Artikel"].astype(str).str.strip().str.replace(".0", "", regex=False)
         mutter_artikel = set(mutter_df["Artikel"])
         positiv_artikel = set(positiv_df["Artikel"])
 
