@@ -5,6 +5,8 @@ import barcode
 from barcode.writer import ImageWriter
 from PIL import Image
 import base64
+from fpdf import FPDF
+import tempfile
 
 # Fest hinterlegte Mutterliste laden (aus dem Projektverzeichnis)
 @st.cache_data
@@ -14,16 +16,46 @@ def load_mutterliste():
     df["Artikel"] = df["Artikel"].astype(str).str.strip().str.replace(".0", "", regex=False)
     return df
 
-# Funktion zur Erzeugung eines Barcodes als Base64-String
-def generate_barcode_base64(code):
-    CODE128 = barcode.get_barcode_class('code128')
+# Barcode generieren als Bilddatei (nicht base64)
+def generate_barcode_image(code):
+    CODE128 = barcode.get_barcode_class("code128")
     rv = io.BytesIO()
     try:
         CODE128(code, writer=ImageWriter()).write(rv)
-        encoded = base64.b64encode(rv.getvalue()).decode("utf-8")
-        return f"<img src='data:image/png;base64,{encoded}' width='150'>"
+        rv.seek(0)
+        return Image.open(rv)
     except Exception:
-        return "Fehler"
+        return None
+
+# PDF-Export mit Barcodes
+def generate_pdf(df):
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, "Herzstücke - Fehlende Artikel (Negativliste)", ln=True, align="L")
+    pdf.ln(5)
+
+    for _, row in df.iterrows():
+        bezeichnung = str(row["Bezeichnung"])
+        artikel = str(row["Artikel"])
+        barcode_img = generate_barcode_image(artikel)
+
+        pdf.set_font("Arial", style="B", size=10)
+        pdf.cell(0, 8, f"{bezeichnung}", ln=True)
+        pdf.set_font("Arial", size=10)
+        pdf.cell(0, 6, f"GTIN/EAN: {artikel}", ln=True)
+
+        if barcode_img:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+                barcode_img.save(tmpfile.name, format="PNG")
+                pdf.image(tmpfile.name, w=60)
+        pdf.ln(6)
+
+    temp_output = io.BytesIO()
+    pdf.output(temp_output)
+    temp_output.seek(0)
+    return temp_output
 
 st.title("🛒 Herzstücke Sortiments-Check")
 st.markdown("""
@@ -42,7 +74,6 @@ if uploaded_file:
     if "Artikel" not in positiv_df.columns:
         st.error("Die hochgeladene Positivliste enthält keine Spalte 'Artikel'.")
     else:
-        # Vergleich vorbereiten
         positiv_df = positiv_df[positiv_df["Artikel"].notna()].copy()
         positiv_df["Artikel"] = positiv_df["Artikel"].astype(str).str.strip().str.replace(".0", "", regex=False)
         mutter_df["Artikel"] = mutter_df["Artikel"].astype(str).str.strip().str.replace(".0", "", regex=False)
@@ -51,33 +82,19 @@ if uploaded_file:
 
         fehlende_artikel = sorted(mutter_artikel - positiv_artikel)
         negativ_df = mutter_df[mutter_df["Artikel"].isin(fehlende_artikel)].copy()
-
-        # Barcode-Spalte erzeugen (HTML fähig)
-        negativ_df["Barcode"] = negativ_df["Artikel"].apply(generate_barcode_base64)
-
-        # Spaltenreihenfolge ändern: Bezeichnung, Artikel, Barcode
-        negativ_df = negativ_df[["Bezeichnung", "Artikel", "Barcode"]]
+        negativ_df = negativ_df[["Bezeichnung", "Artikel"]]
 
         st.success(f"{len(negativ_df)} Artikel fehlen in Ihrem Sortiment.")
-        st.markdown("**Negativliste mit Barcodes (Vorschau gekürzt):**", unsafe_allow_html=True)
-        st.write(negativ_df.head(20).to_html(escape=False, index=False), unsafe_allow_html=True)
-        st.caption("Es werden nur die ersten 20 Einträge angezeigt. Bitte laden Sie die vollständige Liste herunter.")
+        st.markdown("**Negativliste (Vorschau gekürzt):**")
+        st.dataframe(negativ_df.head(20))
+        st.caption("Es werden nur die ersten 20 Einträge angezeigt. Bitte laden Sie die vollständige Liste als PDF herunter.")
 
-        # Download-Button für Negativliste (ohne HTML)
-        @st.cache_data
-        def convert_df(df):
-            df_clean = df.drop(columns=["Barcode"])
-            output = io.BytesIO()
-            df_clean.to_excel(output, index=False, engine="openpyxl")
-            output.seek(0)
-            return output
-
-        excel_data = convert_df(negativ_df)
+        pdf_file = generate_pdf(negativ_df)
         st.download_button(
-            label="📥 Negativliste herunterladen",
-            data=excel_data,
-            file_name="Herzstuecke-Negativliste.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            label="📄 Negativliste als PDF herunterladen",
+            data=pdf_file,
+            file_name="Herzstuecke-Negativliste.pdf",
+            mime="application/pdf"
         )
 
 st.markdown("---")
