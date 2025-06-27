@@ -7,6 +7,7 @@ from PIL import Image
 import base64
 from fpdf import FPDF
 import tempfile
+import os
 
 # Fest hinterlegte Mutterliste laden (aus dem Projektverzeichnis)
 @st.cache_data
@@ -36,6 +37,8 @@ def generate_pdf(df):
     pdf.cell(0, 10, "Herzstücke - Fehlende Artikel (Negativliste)", ln=True, align="L")
     pdf.ln(5)
 
+    tempfiles = []
+
     for _, row in df.iterrows():
         bezeichnung = str(row["Bezeichnung"])
         artikel = str(row["Artikel"])
@@ -50,12 +53,21 @@ def generate_pdf(df):
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
                 barcode_img.save(tmpfile.name, format="PNG")
                 pdf.image(tmpfile.name, w=60)
+                tempfiles.append(tmpfile.name)
         pdf.ln(6)
 
-    temp_output = io.BytesIO()
-    pdf.output(temp_output)
-    temp_output.seek(0)
-    return temp_output
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as pdf_tmp:
+        pdf.output(pdf_tmp.name)
+        with open(pdf_tmp.name, "rb") as f:
+            pdf_bytes = f.read()
+
+    for path in tempfiles:
+        try:
+            os.remove(path)
+        except Exception:
+            pass
+
+    return pdf_bytes
 
 st.title("🛒 Herzstücke Sortiments-Check")
 st.markdown("""
