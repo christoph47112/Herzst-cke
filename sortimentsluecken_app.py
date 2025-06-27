@@ -22,13 +22,14 @@ def generate_barcode_image(code):
     CODE128 = barcode.get_barcode_class("code128")
     rv = io.BytesIO()
     try:
-        CODE128(code, writer=ImageWriter()).write(rv)
+        barcode_obj = CODE128(code, writer=ImageWriter())
+        barcode_obj.write(rv, options={"module_height": 10.0, "font_size": 8, "quiet_zone": 2.0})
         rv.seek(0)
         return Image.open(rv).convert("RGB")
     except Exception:
         return None
 
-# PDF-Export mit Barcodes (kompakt, 3 Spalten optimiert, verbesserte Qualität)
+# PDF-Export mit Barcodes (kompakt, 3 Spalten optimiert, bessere Barcodequalität)
 def generate_pdf(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -39,7 +40,7 @@ def generate_pdf(df):
 
     tempfiles = []
     col_width = 62  # drei Spalten auf A4 (180mm nutzbar)
-    row_height = 35
+    row_height = 40
     margin = 10
     spacing = 3
     x_positions = [margin + i * col_width for i in range(3)]
@@ -53,7 +54,6 @@ def generate_pdf(df):
 
         if barcode_img:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-                barcode_img = barcode_img.resize((130, 30), Image.LANCZOS)
                 barcode_img.save(tmpfile.name, format="PNG")
                 tempfiles.append(tmpfile.name)
 
