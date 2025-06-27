@@ -24,11 +24,11 @@ def generate_barcode_image(code):
     try:
         CODE128(code, writer=ImageWriter()).write(rv)
         rv.seek(0)
-        return Image.open(rv)
+        return Image.open(rv).convert("RGB")
     except Exception:
         return None
 
-# PDF-Export mit Barcodes (kompakt, 2 Spalten optimiert)
+# PDF-Export mit Barcodes (kompakt, 3 Spalten optimiert, verbesserte Qualität)
 def generate_pdf(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -38,13 +38,13 @@ def generate_pdf(df):
     pdf.ln(5)
 
     tempfiles = []
-    col_width = 95  # zwei Spalten auf A4
-    row_height = 40
+    col_width = 62  # drei Spalten auf A4 (180mm nutzbar)
+    row_height = 35
     margin = 10
-    spacing = 5
-    x_positions = [margin, margin + col_width]
-    y = pdf.get_y()
+    spacing = 3
+    x_positions = [margin + i * col_width for i in range(3)]
     col = 0
+    y = pdf.get_y()
 
     for index, row in df.iterrows():
         bezeichnung = str(row["Bezeichnung"])
@@ -53,7 +53,7 @@ def generate_pdf(df):
 
         if barcode_img:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-                barcode_img.thumbnail((70, 20))
+                barcode_img = barcode_img.resize((130, 30), Image.LANCZOS)
                 barcode_img.save(tmpfile.name, format="PNG")
                 tempfiles.append(tmpfile.name)
 
@@ -61,16 +61,16 @@ def generate_pdf(df):
                 if col == 0:
                     y = pdf.get_y()
                 pdf.set_xy(x, y)
-                pdf.set_font("Arial", style="B", size=9)
-                pdf.multi_cell(col_width - spacing, 5, bezeichnung, border=0)
+                pdf.set_font("Arial", style="B", size=7)
+                pdf.multi_cell(col_width - spacing, 4, bezeichnung, border=0)
                 pdf.set_xy(x, pdf.get_y())
-                pdf.set_font("Arial", size=8)
-                pdf.cell(col_width - spacing, 5, f"GTIN: {artikel}", ln=2)
-                pdf.image(tmpfile.name, x=x + 10, y=pdf.get_y(), w=60)
+                pdf.set_font("Arial", size=6)
+                pdf.cell(col_width - spacing, 4, f"GTIN: {artikel}", ln=2)
+                pdf.image(tmpfile.name, x=x + 5, y=pdf.get_y(), w=col_width - 10)
 
-                if col == 1:
+                col = (col + 1) % 3
+                if col == 0:
                     pdf.ln(row_height)
-                col = (col + 1) % 2
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as pdf_tmp:
         pdf.output(pdf_tmp.name)
