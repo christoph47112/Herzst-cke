@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 # Fest hinterlegte Mutterliste laden (aus dem Projektverzeichnis)
 @st.cache_data
@@ -39,7 +40,10 @@ if uploaded_file:
         # Download-Button für Negativliste
         @st.cache_data
         def convert_df(df):
-            return df.to_excel(index=False, engine="openpyxl")
+            output = io.BytesIO()
+            df.to_excel(output, index=False, engine="openpyxl")
+            output.seek(0)
+            return output
 
         excel_data = convert_df(negativ_df)
         st.download_button(
