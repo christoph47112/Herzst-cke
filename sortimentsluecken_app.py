@@ -26,10 +26,10 @@ def generate_barcode_base64(code):
 
 st.title("🛒 Herzstücke Sortiments-Check")
 st.markdown("""
-Lade deine **Positivliste** hoch. Die App vergleicht sie mit dem Herzstücke-Gesamtsortiment
-und erstellt automatisch eine Negativliste (fehlende Artikel in deinem Markt).
+Bitte laden Sie Ihre **Positivliste** hoch. Diese Anwendung vergleicht Ihre Liste mit dem vollständigen Herzstücke-Sortiment
+und erstellt automatisch eine Negativliste mit Artikeln, die in Ihrem Markt fehlen.
 
-**Hinweis:** Es wird erwartet, dass die Positivliste eine Spalte `Artikel` enthält (GTIN/EAN).
+**Hinweis:** Es wird erwartet, dass Ihre Positivliste eine Spalte `Artikel` enthält (GTIN/EAN).
 """)
 
 uploaded_file = st.file_uploader("Positivliste hochladen (.xlsx)", type=["xlsx"])
@@ -56,9 +56,10 @@ if uploaded_file:
         # Spaltenreihenfolge ändern: Bezeichnung, Artikel, Barcode
         negativ_df = negativ_df[["Bezeichnung", "Artikel", "Barcode"]]
 
-        st.success(f"{len(negativ_df)} Artikel fehlen im Sortiment.")
-        st.markdown("**Negativliste mit Barcodes:**", unsafe_allow_html=True)
-        st.write(negativ_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+        st.success(f"{len(negativ_df)} Artikel fehlen in Ihrem Sortiment.")
+        st.markdown("**Negativliste mit Barcodes (Vorschau gekürzt):**", unsafe_allow_html=True)
+        st.write(negativ_df.head(20).to_html(escape=False, index=False), unsafe_allow_html=True)
+        st.caption("Es werden nur die ersten 20 Einträge angezeigt. Bitte laden Sie die vollständige Liste herunter.")
 
         # Download-Button für Negativliste (ohne HTML)
         @st.cache_data
