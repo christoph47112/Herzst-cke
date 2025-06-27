@@ -23,13 +23,13 @@ def generate_barcode_image(code):
     rv = io.BytesIO()
     try:
         barcode_obj = CODE128(code, writer=ImageWriter())
-        barcode_obj.write(rv, options={"module_height": 6.0, "font_size": 4, "quiet_zone": 2.0})
+        barcode_obj.write(rv, options={"module_height": 5.0, "font_size": 3, "quiet_zone": 1.0})
         rv.seek(0)
         return Image.open(rv).convert("RGB")
     except Exception:
         return None
 
-# PDF-Export mit Barcodes (kompakt, 3 Spalten optimiert, 6 Zeilen pro Seite, keine Überlappung)
+# PDF-Export mit Barcodes (kompakt, 3 Spalten optimiert, mehr Zeilen pro Seite)
 def generate_pdf(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -40,7 +40,7 @@ def generate_pdf(df):
 
     tempfiles = []
     col_width = 62
-    row_height = 32  # kleiner durch Barcode-Verkleinerung
+    row_height = 25  # noch kleiner durch Barcode-Verkleinerung
     margin = 10
     spacing = 3
     x_positions = [margin + i * col_width for i in range(3)]
@@ -67,12 +67,12 @@ def generate_pdf(df):
                     y = pdf.get_y()
 
                 pdf.set_xy(x, y)
-                pdf.set_font("Arial", style="B", size=6)
-                pdf.multi_cell(col_width - spacing, 4, bezeichnung, border=0)
+                pdf.set_font("Arial", style="B", size=5)
+                pdf.multi_cell(col_width - spacing, 3, bezeichnung, border=0)
                 pdf.set_xy(x, pdf.get_y())
-                pdf.set_font("Arial", size=5)
-                pdf.cell(col_width - spacing, 4, f"Artikelnummer: {artikel}", ln=2)
-                pdf.image(tmpfile.name, x=x + 5, y=pdf.get_y(), w=col_width - 15)
+                pdf.set_font("Arial", size=4)
+                pdf.cell(col_width - spacing, 3, f"Artikelnummer: {artikel}", ln=2)
+                pdf.image(tmpfile.name, x=x + 4, y=pdf.get_y(), w=col_width - 20)
 
                 col = (col + 1) % 3
                 if col == 0:
