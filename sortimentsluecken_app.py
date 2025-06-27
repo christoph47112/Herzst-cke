@@ -28,9 +28,9 @@ def generate_barcode_image(code):
     except Exception:
         return None
 
-# PDF-Export mit Barcodes (kompakter, 2 Spalten)
+# PDF-Export mit Barcodes (kompakt, 2 Spalten optimiert)
 def generate_pdf(df):
-    pdf = FPDF()
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -38,37 +38,39 @@ def generate_pdf(df):
     pdf.ln(5)
 
     tempfiles = []
-    col_width = 90
+    col_width = 95  # zwei Spalten auf A4
     row_height = 40
-    x_start = pdf.get_x()
-    y_start = pdf.get_y()
+    margin = 10
+    spacing = 5
+    x_positions = [margin, margin + col_width]
+    y = pdf.get_y()
     col = 0
 
-    for _, row in df.iterrows():
+    for index, row in df.iterrows():
         bezeichnung = str(row["Bezeichnung"])
         artikel = str(row["Artikel"])
         barcode_img = generate_barcode_image(artikel)
 
         if barcode_img:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-                barcode_img.thumbnail((80, 25))
+                barcode_img.thumbnail((70, 20))
                 barcode_img.save(tmpfile.name, format="PNG")
                 tempfiles.append(tmpfile.name)
 
-                x = x_start + col * col_width
-                y = pdf.get_y()
+                x = x_positions[col]
+                if col == 0:
+                    y = pdf.get_y()
                 pdf.set_xy(x, y)
                 pdf.set_font("Arial", style="B", size=9)
-                pdf.multi_cell(col_width, 5, bezeichnung, border=0)
+                pdf.multi_cell(col_width - spacing, 5, bezeichnung, border=0)
                 pdf.set_xy(x, pdf.get_y())
                 pdf.set_font("Arial", size=8)
-                pdf.cell(col_width, 5, f"GTIN: {artikel}", ln=2)
-                pdf.image(tmpfile.name, x=x + 5, y=pdf.get_y(), w=70)
+                pdf.cell(col_width - spacing, 5, f"GTIN: {artikel}", ln=2)
+                pdf.image(tmpfile.name, x=x + 10, y=pdf.get_y(), w=60)
 
-                col += 1
-                if col >= 2:
-                    col = 0
+                if col == 1:
                     pdf.ln(row_height)
+                col = (col + 1) % 2
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as pdf_tmp:
         pdf.output(pdf_tmp.name)
