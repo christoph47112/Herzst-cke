@@ -1,5 +1,5 @@
 streamlit
 pandas
-openpyxl
-python-barcode
 Pillow
+python-barcode
+fpdf
