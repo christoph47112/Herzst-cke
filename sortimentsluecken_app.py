@@ -28,7 +28,7 @@ def generate_barcode_image(code):
     except Exception:
         return None
 
-# PDF-Export mit Barcodes
+# PDF-Export mit Barcodes (kompakter, 2 Spalten)
 def generate_pdf(df):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -38,23 +38,37 @@ def generate_pdf(df):
     pdf.ln(5)
 
     tempfiles = []
+    col_width = 90
+    row_height = 40
+    x_start = pdf.get_x()
+    y_start = pdf.get_y()
+    col = 0
 
     for _, row in df.iterrows():
         bezeichnung = str(row["Bezeichnung"])
         artikel = str(row["Artikel"])
         barcode_img = generate_barcode_image(artikel)
 
-        pdf.set_font("Arial", style="B", size=10)
-        pdf.cell(0, 8, f"{bezeichnung}", ln=True)
-        pdf.set_font("Arial", size=10)
-        pdf.cell(0, 6, f"GTIN/EAN: {artikel}", ln=True)
-
         if barcode_img:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+                barcode_img.thumbnail((80, 25))
                 barcode_img.save(tmpfile.name, format="PNG")
-                pdf.image(tmpfile.name, w=60)
                 tempfiles.append(tmpfile.name)
-        pdf.ln(6)
+
+                x = x_start + col * col_width
+                y = pdf.get_y()
+                pdf.set_xy(x, y)
+                pdf.set_font("Arial", style="B", size=9)
+                pdf.multi_cell(col_width, 5, bezeichnung, border=0)
+                pdf.set_xy(x, pdf.get_y())
+                pdf.set_font("Arial", size=8)
+                pdf.cell(col_width, 5, f"GTIN: {artikel}", ln=2)
+                pdf.image(tmpfile.name, x=x + 5, y=pdf.get_y(), w=70)
+
+                col += 1
+                if col >= 2:
+                    col = 0
+                    pdf.ln(row_height)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as pdf_tmp:
         pdf.output(pdf_tmp.name)
