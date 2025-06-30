@@ -34,10 +34,10 @@ def generate_pdf(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, "EDEKA Hessenring KI erstellter Prototyp", ln=False, align="R")
-    pdf.ln(7)
-    pdf.cell(0, 10, "Herzstücke - Fehlende Artikel (Negativliste)", ln=True, align="L")
+    pdf.set_font("Arial", size=9)
+    pdf.cell(140, 10, "Herzstücke - Fehlende Artikel (Negativliste)", ln=False, align="L")
+    pdf.set_font("Arial", size=7)
+    pdf.cell(0, 10, "EDEKA Hessenring KI erstellter Prototyp", ln=True, align="R")
     pdf.ln(3)
 
     tempfiles = []
@@ -66,9 +66,11 @@ def generate_pdf(df):
 
                 if y + row_height > max_y:
                     pdf.add_page()
-                    pdf.set_font("Arial", size=12)
-                    pdf.cell(0, 10, "EDEKA Hessenring KI erstellter Prototyp", ln=False, align="R")
-                    pdf.ln(7)
+                    pdf.set_font("Arial", size=9)
+                    pdf.cell(140, 10, "Herzstücke - Fehlende Artikel (Negativliste)", ln=False, align="L")
+                    pdf.set_font("Arial", size=7)
+                    pdf.cell(0, 10, "EDEKA Hessenring KI erstellter Prototyp", ln=True, align="R")
+                    pdf.ln(3)
                     y = pdf.get_y()
 
                 pdf.set_xy(x, y)
