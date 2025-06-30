@@ -35,8 +35,10 @@ def generate_pdf(df):
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, "EDEKA Hessenring KI erstellter Prototyp", ln=False, align="R")
+    pdf.ln(7)
     pdf.cell(0, 10, "Herzstücke - Fehlende Artikel (Negativliste)", ln=True, align="L")
-    pdf.ln(5)
+    pdf.ln(3)
 
     tempfiles = []
     col_width = 62
@@ -64,6 +66,9 @@ def generate_pdf(df):
 
                 if y + row_height > max_y:
                     pdf.add_page()
+                    pdf.set_font("Arial", size=12)
+                    pdf.cell(0, 10, "EDEKA Hessenring KI erstellter Prototyp", ln=False, align="R")
+                    pdf.ln(7)
                     y = pdf.get_y()
 
                 pdf.set_xy(x, y)
