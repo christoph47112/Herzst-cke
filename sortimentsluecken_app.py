@@ -10,7 +10,7 @@ import tempfile
 import os
 
 # Fest hinterlegte Mutterliste laden (aus dem Projektverzeichnis)
-@st.cache_data
+@st.cache_data(show_spinner="Lade Mutterliste ...", ttl=0)
 def load_mutterliste():
     df = pd.read_excel("Herzstuecke-Mutter-Liste.xlsx")
     df = df[df["Artikel"].notna()].copy()
